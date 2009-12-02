@@ -33,7 +33,7 @@ var ProValidate = (function(){
 			/**
 			 * If true the form will submit as normal. False causes Event.stop();
 			 */
-			submitOnValid: false,
+			submitOnValid: true,
 			
 			/**
 			 * Class prefix used for your inline validation rules. 
