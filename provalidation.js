@@ -77,7 +77,12 @@ var ProValidate = (function(){
 			 * @example {rule: "Message", rule2: "Message"}
 			 */
 			cannedMessages: {
-				required: 'Required'
+				required: 'Field is required',
+				phone: 'Please enter a valid phone number',
+				email: 'Please enter a valid email',
+				alpha: 'May only contain letters',
+				alpah_numeric: 'May only contain numbers and letters',
+				numeric: 'May only contain numbers'
 			},
 			
 			/**
