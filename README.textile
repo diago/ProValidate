@@ -9,32 +9,34 @@ On the server side rules are added to form elements that will be validated when 
 rules create a pipe separated string added to the class of an element and ProValidate will roll through them and generate 
 the client side validation. 
 
+h2. Examples
+
 An example class:
 <pre><code class="php">
-    validate_rquired|length[1,15]|alpha_numeric
+validate_rquired|length[1,15]|alpha_numeric
 </code></pre>
 
 Rules are comprised of rule[params] or just rule.
 
 In full:
 <pre><code class="php">
-    &lt;input type=&quot;text&quot; id=&quot;username&quot; name=&quot;username&quot; class=&quot;input validate_rquired|length[1,15]|alpha_numeric&quot; value=&quot;&quot; /&gt;
+<input type="text" id="username" name="username" class="validate_rquired|length[1,15]|alpha_numeric" value="" />
 </code></pre>
 
 Of course you can use ProValidate as a standard JS validation library by manual adding the class above or:
 <pre><code class="javascript">
-    var provalidate = new ProValidate('myForm');
-    provalidate.add('username').rule('required', 'Required Message').rule('alpha_numeric');
-    
-    // OR
-    
-    var usernameRules = {
-        required: 'This field is required',
-        alpha_numeric: false // will use the canned message
-    }
-    provalidate.addRules('username', rules);
-    
-    // OR
-    
-    provalidate.addRule('username', 'required', 'Required Message');
+var provalidate = new ProValidate('myForm');
+provalidate.add('username').rule('required', 'Required Message').rule('alpha_numeric');
+
+// OR
+
+var usernameRules = {
+    required: 'This field is required',
+    alpha_numeric: false // will use the canned message
+}
+provalidate.addRules('username', rules);
+
+// OR
+
+provalidate.addRule('username', 'required', 'Required Message');
 </code></pre>
