@@ -33,22 +33,7 @@ var ProValidate = (function(){
 			/**
 			 * If true the form will submit as normal. False causes Event.stop();
 			 */
-			submitOnValid: true,
-			
-			/**
-			 * Class prefix used for your inline validation rules. 
-			 * 
-			 * @example validate_required|length[5,50]
-			 */
-			prefix: 'validate_',
-			
-			/**
-			 * This is the template used to find error messages in the DOM. If the id is found
-			 * the element is removed and either the value or innerHTML is used for the error message.
-			 * 
-			 * @example <input type="hidden" id="name::required" name="login_name_required_error_message" value="Field is required" />
-			 */
-			errorMessageId: '#{element}::#{rule}',
+			submitOnValid: true,			
 			
 			/**
 			 * Class that is added to the form elements that are invalid
@@ -66,23 +51,31 @@ var ProValidate = (function(){
 			 * Inorder for clearInvalid(elem) to work you need to add #{elementId} to the class 
 			 */
 			errorTemplate: '<span class="#{elementId} #{errorMessageClass}">#{message}</span>',
+
+			/**
+			 * Causes ProValidate to check Element#store for a 'provalidate' {rules: message} object.
+			 * Set to false if you are adding rules manually with addRule or addRules to save a loop.
+			 */
+			checkStore: true,
 			
 			/**
 			 * Class name given to an invalid form
 			 */
 			invalidFormClass: 'invalidForm',
+			
 			/**
 			 * Use to setup default messages for validations. 
 			 * 
 			 * @example {rule: "Message", rule2: "Message"}
 			 */
 			cannedMessages: {
-				required: 'Field is required',
+				required: 'Required',
 				phone: 'Please enter a valid phone number',
 				email: 'Please enter a valid email',
 				alpha: 'May only contain letters',
 				alpah_numeric: 'May only contain numbers and letters',
-				numeric: 'May only contain numbers'
+				numeric: 'May only contain numbers',
+				date: 'Please enter a valid date'
 			},
 			
 			/**
@@ -124,32 +117,42 @@ var ProValidate = (function(){
 			this.options = Object.extend(ProValidate.options, options || {});
 			
 			this.form = $(form);
-			this.prefix = this.options.prefix;
 			
 			this.elements = $H();
-			this.errorMessageId = new Template(this.options.errorMessageId);
 			this.errorTemplate = new Template(this.options.errorTemplate);
 			this.cannedMessages = $H(this.options.cannedMessages);
+			this._storedRulesAdded = false;
 			
 			this.form.observe('submit', this._validate.bindAsEventListener(this));
 
 			this.options.onStart(this);
 			
-			$$('form#'+this.form.identify()+' [class*="'+this.prefix+'"]').each(function(elem){
-				
-				rules = elem.classNames().find(function(className){
-					return className.startsWith(this.prefix);
-				}.bind(this));
-				
-				if(rules){
-					this._addRules(elem, this._classToRules(rules));
-				}
-			}.bind(this));		
+			/* May add inline option later using html5 data-* attribute
+			$$('form#'+this.form.identify()+' [data-provalidate]').each(function(elem){
+				this.inlineRules(elem);
+			}.bind(this));			
+			*/
 			
+			// focus errors that could have been added from the server
 			var current_errors = $$('.'+this.options.errorClass);
 			if(current_errors.length > 0) current_errors.first().select();
 		},
-
+		
+		/* May add inline option later using html5 data-* attribute
+		inlineRules: function(elem){
+			var elem = $(elem);
+			rules = elem.readAttribute('data-provalidate');
+			
+			// stay valid
+			if(! ProValidate.HTML5) elem.removeAttribute('data-provalidate');
+			
+			if(rules){
+				this._addRules(elem, this._toRules(rules));
+			}
+			return this;
+		},
+		*/
+		
 		/**
 		 * Validates an element to its rules
 		 * @param elem The element to validate
@@ -158,7 +161,7 @@ var ProValidate = (function(){
 		 */
 		validate: function(elem, rules){
 			
-			var elem = $(elem);
+			var elem = this._realElement(elem);
 			var eid = elem.identify();
 			var valid = false;
 			var rule, msg, fillTemp;
@@ -238,9 +241,10 @@ var ProValidate = (function(){
 		addRules: function(elem, rules){
 			if(Object.isArray(rules) || typeof rules !== "object") throw ('rules must be an object {}');
 			var x;
-			for(x in rules){ console.log(x);
+			for(x in rules){
 				this.addRule(elem, x, rules[x]);
 			}
+			return this;
 		},
 		
 		/**
@@ -269,6 +273,19 @@ var ProValidate = (function(){
 		},
 		
 		/**
+		 * Adds an elements stored rules from Element#store
+		 * @param elem
+		 * @return this
+		 */
+		storedRules: function(elem){
+			var rules;
+			if(rules = $(elem).retrieve('provalidate')){
+				this.addRules(elem, rules);
+			}
+			return this;
+		},
+		
+		/**
 		 * Clears all invalid messages and classes.
 		 * If an element is given it will only clear messages and classes
 		 * related to it.
@@ -289,7 +306,14 @@ var ProValidate = (function(){
 		},
 		
 		_validate: function(ev){
-
+			// run through elem stores to find rules and messages
+			if(!this._storedRulesAdded && this.options.checkStore){
+				this.form.getElements().each(function(elem){
+					this.storedRules(elem);
+				}.bind(this));
+				this._storedRulesAdded = true;
+			}
+			
 			var elem = ev.element();
 			var invalid;
 			this.clearInvalid();
@@ -335,26 +359,7 @@ var ProValidate = (function(){
 		},
 		
 		_findErrorMessage: function(elem, rule){
-			var errorVars = {
-				element: $(elem).identify(),
-				rule: rule,
-				form: this.form.identify()
-			};
-			
-			var error_msg = $(this.errorMessageId.evaluate(errorVars));
-			var msg;
-			if(error_msg){
-				var element = error_msg.remove();
-				
-				if(msg = element.value){
-					return msg;
-				} else {
-					return element.innerHTML;
-				}
-			} else {
-				msg = this.cannedMessages.get(rule);
-			}
-			return msg || this.options.defaultInvalidMessage;
+			return this.cannedMessages.get(rule) || this.options.defaultInvalidMessage;
 		},
 		
 		_realElement: function(elem){
@@ -364,10 +369,6 @@ var ProValidate = (function(){
 		_ruleAndParams: function(rule){
 			var match = rule.match(/(\w.*)\[(.*)\]/);
 			return (match === null) ? rule : [match[1],match[2]];
-		},
-		
-		_classToRules: function(vClass){
-			return vClass.gsub(this.prefix, '').split('|');
 		}
 	};
 	
