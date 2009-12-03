@@ -88,4 +88,23 @@ No Parameter - By default date checks for dd/dd/dddd but you can change the patt
     To change the pattern, add **Provalidate.Validation.dateFormat = /regex/** before calling new ProValidate. 
     This may passed in as a parameter soon.
 
-More rules to come
+More built in rules to come.
+
+You can add your own rules by creating a rules object and extending ProValidate.Validation:
+
+<pre><code class="javascript">
+myRules = {
+	not: function(elem, param){
+		var value = $F(elem);
+		return value.empty() ? true : (value != param);
+	}
+};
+
+Object.extend(ProValidate.Validation, myRules);
+</code></pre>
+
+To add your rule to an element:
+
+<pre><code class="javascript">
+	var provalidate = new ProValidate('myForm').add('state').rule('not[VA]', "You can't live in Virginia, you are not a lover.");
+</code></pre>
