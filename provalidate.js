@@ -281,6 +281,8 @@ var ProValidate = (function(){
 			var rules;
 			if(rules = $(elem).retrieve('provalidate')){
 				this.addRules(elem, rules);
+				// cleanup
+				$(elem).store('provalidate', null);
 			}
 			return this;
 		},
