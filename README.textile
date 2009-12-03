@@ -1,4 +1,4 @@
-h1. Provalidate
+h1. ProValidate
 
 Validation blows. It blows even harder when you have just finished server side validation and then move on to
 client side validation. The focus of ProValidate is to be able to use the rules and error messages you
@@ -9,59 +9,50 @@ On the server side rules are added to form elements that will be validated when 
 rules create a pipe separated string added to the class of an element and ProValidate will roll through them and generate 
 the client side validation. 
 
-h2. Simple Use
+h2. Examples
 
-Javascript:
+You can add rules several different ways depending on your needs. When adding elements to rules you can use either the id or the 
+name of the form element.
+
+Rules added manually:
 <pre><code class="javascript">
 <script type="text/javascript" src="/js/prototype/prototype.js"></script>
 <script type="text/javascript" src="/js/provalidate/provalidate.js"></script>
 <script>
 document.observe('dom:loaded', function(){
     var provalidate = new ProValidate('infoForm');
+    var usernameRules = {
+    	'required': false, // uses the default required message
+    	'length[1,10]': 'Must be between 1 and 10 chars',
+    	'alpha_numeric': false
+    };
+    provalidate.addRules('username', usernameRules);
+    
+    provalidate.add('phone').rule('required').rule('phone', 'Please enter a valid phone number');
+    
+    provalidate.addRule('email', 'email', 'Must be a valid email address');
 });
 </script>
 </code></pre>
 
-HTML:
-<pre><code class="html">
-<form id="infoForm" action="" method="post">
-    <input type="text" name="username" id="username" class="validate_required|length[1,15]|alpha_numeric" value="" />
-    <input type="text" name="phone" id="phone" class="validate_required|phone" value="" />
-    <input type="text" name="email" id="email" class="validate_required|email" value="" />
-</form>
-</code></pre>
+I have my backend system generate element storage which is another option for adding validate:
 
-h2. Examples
-
-An example class:
-<pre><code class="php">
-validate_rquired|length[1,15]|alpha_numeric
-</code></pre>
-
-Rules are comprised of rule[params] or just rule.
-
-In full:
-<pre><code class="php">
-<input type="text" id="username" name="username" class="validate_rquired|length[1,15]|alpha_numeric" value="" />
-</code></pre>
-
-Of course you can use ProValidate as a standard JS validation library by manual adding the class above or:
 <pre><code class="javascript">
-var provalidate = new ProValidate('myForm');
-provalidate.add('username').rule('required', 'Required Message').rule('alpha_numeric');
-
-// OR
-
-var usernameRules = {
-    required: 'This field is required',
-    alpha_numeric: false // will use the canned message
-}
-provalidate.addRules('username', rules);
-
-// OR
-
-provalidate.addRule('username', 'required', 'Required Message');
+document.observe('dom:loaded', function(){
+	$('login_date').store('provalidate',{'date':'Date must be mm/dd/yyyy'});
+	$('login_alpha').store('provalidate',{'alpha':'Must contain only letters'});
+	$('login_alpha_numeric').store('provalidate',{'alpha_numeric':'Must contain only letters and numbers.'});
+	$('login_numeric').store('provalidate',{'numeric':'Must contain only numbers'});
+	$('login_phone').store('provalidate',{'phone':'Invalid phone'});
+	$('login_email').store('provalidate',{'email':'Invalid email'});
+	$('login_password').store('provalidate',{'required':'Required','matches[password2]':'Must match Password2'});
+	$('login_password2').store('provalidate',{'required':'Required','matches[password]':'Must match Password'});
+	$('login_state').store('provalidate',{'required':'Required'});
+	$('login_web_site').store('provalidate',{'url':'Must be a full web address'});
+});
 </code></pre>
+
+ProValidate will run through and add the validation rules and messages from the storage.
 
 h2. Built in rules
 
