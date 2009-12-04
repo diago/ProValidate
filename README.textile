@@ -108,3 +108,18 @@ To add your rule to an element:
 <pre><code class="javascript">
 	var provalidate = new ProValidate('myForm').add('state').rule('not[VA]', "You can't live in Virginia, you are not a lover.");
 </code></pre>
+
+h2. Methods
+
+For most methods **element** refers to either the id of an element or the name of the element. All methods are chainable except validate which returns boolean. 
+
+|_. Method |_. Use |_. Description |
+| add | provalidate.add(element) | Sets an element up for rules to be added with .rule() |
+| addRule | provalidate.addRule(element, rule, message) | Adds a rule to the form element. |
+| addRules | provalidate.addRules(element, {rule: message, rule2: message}) | Adds multiple rules to an element. |
+| clearInvalid | protovalidate.clearInvalid(element) | Clears errors from an element. If no element is given, clears all errors |
+| removeRule | provalidate.removeRule(element, rule) | Removes the given rule from an element. |
+| rule | provalidate.rule(rule, message) | Adds a rule to an element prepared with .add() |
+| storedRules | provaidate.storedRules(element) | Pulls the rules that have been stored in an element with Element#store |
+| trigger | provalidate.trigger(element, rule, message) | Triggers an error. Message is optional. Rule is optional if you provide a message. |
+| validate | provalidate.validate(element, rule) | Returns bool. Rule can be a string to check a single rule, an object of {rules: messages} to check multiple, or nothing to check all rules currently assigned to the element. |
