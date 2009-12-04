@@ -75,7 +75,8 @@ var ProValidate = (function(){
 				alpha: 'May only contain letters',
 				alpah_numeric: 'May only contain numbers and letters',
 				numeric: 'Must be a valid number',
-				date: 'Please enter a valid date'
+				date: 'Please enter a valid date',
+				digit: 'Must contain only numbers'
 			},
 			
 			/**
@@ -419,6 +420,10 @@ var ProValidate = (function(){
 		alpha_numeric: function(elem){
 			var value = $F(elem);
 			return value.empty() ? true : /^[a-zA-Z0-9]*$/.test(value);
+		},
+		digit: function(elem){
+			var value = $F(elem);
+			return /^\d*$/.test(value);
 		},
 		numeric: function(elem, decChar){
 			var value = $F(elem);

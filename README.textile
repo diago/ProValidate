@@ -65,6 +65,10 @@ date[pattern] - By default date checks for dd/dd/dddd but you can change the pat
     To change the pattern globally, add **Provalidate.Validation.dateFormat = 'regexPattern'** before calling new ProValidate. 
     You can also pass the pattern in as a param. **You must remember to use RegExp conventions.** Example /\d/ would be '\\d'.
 
+h3. digit
+
+No Parameters - Value must contain only numbers
+
 h3. email
 
 No Parameters - Value must be a valid user@domain.tld 
