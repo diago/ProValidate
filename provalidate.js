@@ -74,7 +74,7 @@ var ProValidate = (function(){
 				email: 'Please enter a valid email',
 				alpha: 'May only contain letters',
 				alpah_numeric: 'May only contain numbers and letters',
-				numeric: 'May only contain numbers',
+				numeric: 'Must be a valid number',
 				date: 'Please enter a valid date'
 			},
 			
@@ -375,7 +375,7 @@ var ProValidate = (function(){
 	};
 	
 	ProValidate.Validation = {
-		datePattern: /\d{1,2}\/\d{1,2}\/\d{4}/,
+		datePattern: '\\d{1,2}\\/\\d{1,2}\\/\\d{4}',
 		required: function(elem){
 			var value = $F(elem);
 			return !value.empty();
@@ -420,9 +420,11 @@ var ProValidate = (function(){
 			var value = $F(elem);
 			return value.empty() ? true : /^[a-zA-Z0-9]*$/.test(value);
 		},
-		numeric: function(elem){
+		numeric: function(elem, decChar){
 			var value = $F(elem);
-			return value.empty() ? true : /^[0-9]*$/.test(value);			
+			var dec = decChar || '.';
+			var exp = new RegExp('^-?[0-9]*\\'+dec+'?[0-9]*$');
+			return value.empty() ? true : exp.test(value);			
 		},
 		email: function(elem){
 			var value = $F(elem);
@@ -441,9 +443,10 @@ var ProValidate = (function(){
 			}
 			return value.empty() ? true : ((length.indexOf(realNumber.length) === -1) ? false : true);
 		},
-		date: function(elem){
+		date: function(elem, pattern){
 			var value = $F(elem);
-			return value.empty() ? true : ProValidate.Validation.datePattern.test(value);
+			var format = new RegExp(pattern || ProValidate.Validation.datePattern);
+			return value.empty() ? true : format.test(value);
 		}
 	};
 	

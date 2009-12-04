@@ -51,15 +51,6 @@ h2. Built in rules
 
 The built in rules follow the "Kohana":http://www.kohanaphp.org validation conventions.
 
-h3. required
-
-No Parameters - returns false on an empty() value
-
-h3. length
-
-length[5] - Value would have to be exactly 5 chars
-length[1,10] - Value would have to be between 1 and 10 chars
-
 h3. alpha
 
 No Parameters - Value must contain only letters
@@ -68,25 +59,34 @@ h3. alpha_numeric
 
 No Parameters - Values must contain only letters and numbers
 
+h3. date
+
+date[pattern] - By default date checks for dd/dd/dddd but you can change the pattern to whatever you like.
+    To change the pattern globally, add **Provalidate.Validation.dateFormat = 'regexPattern'** before calling new ProValidate. 
+    You can also pass the pattern in as a param. **You must remember to use RegExp conventions.** Example /\d/ would be '\\d'.
+
+h3. email
+
+No Parameters - Value must be a valid user@domain.tld 
+
+h3. length
+
+length[5] - Value would have to be exactly 5 chars
+length[1,10] - Value would have to be between 1 and 10 chars
+
 h3. numeric 
 
-No Parameters - Value must contain only numbers
+numeric[decChar] - Value must be a valid positive, negative or decimal number. By default the decimal is a '.'. Change the param if you require a different decimal such as ','.
 
 h3. phone
 
 phone[7,10,11] - Value must contain the given amount of numbers found in the parameter. By default
     just using **validate_phone** will return true for 7, 10 and 11 digit phone numbers. If you wanted to
-    accept only 10 digit numbers simply use **validate_phone[10]**.
-    
-h3. email
+    accept only 10 digit numbers simply use **validate_phone[10]**. 
 
-No Parameters - Value must be a valid user@domain.tld 
+h3. required
 
-h3. date
-
-No Parameter - By default date checks for dd/dd/dddd but you can change the pattern to whatever you like.
-    To change the pattern, add **Provalidate.Validation.dateFormat = /regex/** before calling new ProValidate. 
-    This may passed in as a parameter soon.
+No Parameters - returns false on an empty() value
 
 More built in rules to come.
 
