@@ -111,7 +111,7 @@ To add your rule to an element:
 
 h2. Methods
 
-For most methods **element** refers to either the id of an element or the name of the element. All methods are chainable except validate which returns boolean. 
+For most methods **element** refers to either the **id** of an element or the **name** of the element. All methods are chainable except validate which returns boolean. 
 
 |_. Method |_. Use |_. Description |
 | add | provalidate.add(element) | Sets an element up for rules to be added with .rule() |
