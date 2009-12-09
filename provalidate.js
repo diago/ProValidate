@@ -26,7 +26,7 @@ var ProValidate = (function(){
 	
 	var ProValidate = Class.create();
 	
-	ProValidate.Version = '0.3.1';
+	ProValidate.Version = '0.4.1';
 	
 	ProValidate.options = {
 			
@@ -70,13 +70,14 @@ var ProValidate = (function(){
 			 */
 			cannedMessages: {
 				required: 'Required',
-				phone: 'Valid phone number',
-				email: 'Valid email',
+				phone: 'Invalid phone number',
+				email: 'Invalid email',
 				alpha: 'Letters only',
 				alpah_numeric: 'Numbers and letters only',
-				numeric: 'Valid number',
-				date: 'Valid date',
-				digit: 'Numbers only'
+				numeric: 'Invalid number',
+				date: 'Invalid date',
+				digit: 'Numbers only',
+				price: 'Invalid price'
 			},
 			
 			/**
@@ -455,6 +456,10 @@ var ProValidate = (function(){
 			var value = $F(elem);
 			var format = new RegExp(pattern || ProValidate.Validation.datePattern);
 			return value.empty() ? true : format.test(value);
+		},
+		price: function(elem){
+			var value = $F(elem);
+			return value.empty() ? true : /^\$?(\d{1,3}\,?\d{3}|\d{1})*(\.?\d{2})?$/.test(value);
 		}
 	};
 	
