@@ -26,7 +26,7 @@ var ProValidate = (function(){
 	
 	var ProValidate = Class.create();
 	
-	ProValidate.Version = '0.1.0';
+	ProValidate.Version = '0.2.0';
 	
 	ProValidate.options = {
 			
@@ -96,10 +96,10 @@ var ProValidate = (function(){
 			 * @param rule The rule that failed
 			 * @param message The message associated with the rule
 			 * 
-			 * Be sure to return true so ProValidate will not use the default
-			 * insert of the message.
+			 * Returns true here to trigger the default invalid method. Do not
+			 * return true unless you want the default to run.
 			 */
-			onInvalid: Prototype.emptyFunction,
+			onInvalid: function(){return true;},
 			
 			/**
 			 * Runs when an element is valid
@@ -108,7 +108,7 @@ var ProValidate = (function(){
 			
 			/**
 			 * Called when everything passes validation
-			 * @param form The form is passed in
+			 * @param this The entire instance is passed in
 			 */
 			onFormValid: Prototype.emptyFunction
 	};
@@ -205,7 +205,7 @@ var ProValidate = (function(){
 				errorMessageClass: this.options.errorMessageClass,
 				message: msg || this._findErrorMessage(elem, rule)
 			};
-			if(this.options.onInvalid(elem, rule, msg) !== true){
+			if(this.options.onInvalid(elem, rule, msg) === true){
 				elem.insert({after: this.errorTemplate.evaluate(fillTemp)});
 			}
 			this.form.addClassName(this.options.invalidFormClass);
@@ -334,7 +334,7 @@ var ProValidate = (function(){
 				invalid.first().select();
 			} else {
 				if( ! this.options.submitOnValid ) ev.stop();
-				this.options.onFormValid(this.form);
+				this.options.onFormValid(this);
 			}
 		},
 		
