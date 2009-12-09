@@ -26,7 +26,7 @@ var ProValidate = (function(){
 	
 	var ProValidate = Class.create();
 	
-	ProValidate.Version = '0.2.0';
+	ProValidate.Version = '0.3.0';
 	
 	ProValidate.options = {
 			
@@ -70,13 +70,13 @@ var ProValidate = (function(){
 			 */
 			cannedMessages: {
 				required: 'Required',
-				phone: 'Please enter a valid phone number',
-				email: 'Please enter a valid email',
-				alpha: 'May only contain letters',
-				alpah_numeric: 'May only contain numbers and letters',
-				numeric: 'Must be a valid number',
-				date: 'Please enter a valid date',
-				digit: 'Must contain only numbers'
+				phone: 'Valid phone number',
+				email: 'Valid email',
+				alpha: 'Letters only',
+				alpah_numeric: 'Numbers and letters only',
+				numeric: 'Valid number',
+				date: 'Valid date',
+				digit: 'Numbers only'
 			},
 			
 			/**
@@ -95,6 +95,7 @@ var ProValidate = (function(){
 			 * @param element The element that is being validated
 			 * @param rule The rule that failed
 			 * @param message The message associated with the rule
+			 * @param this The entire instance is passed in
 			 * 
 			 * Returns true here to trigger the default invalid method. Do not
 			 * return true unless you want the default to run.
@@ -103,6 +104,8 @@ var ProValidate = (function(){
 			
 			/**
 			 * Runs when an element is valid
+			 * @param element The element that is being validated
+			 * @param this The entire instance is passed in
 			 */
 			onValid: Prototype.emptyFunction,
 			
@@ -185,7 +188,7 @@ var ProValidate = (function(){
 				}
 			}.bind(this));
 				
-			this.options.onValid(elem);
+			this.options.onValid(elem, this);
 			
 			return valid;
 		},
@@ -205,7 +208,7 @@ var ProValidate = (function(){
 				errorMessageClass: this.options.errorMessageClass,
 				message: msg || this._findErrorMessage(elem, rule)
 			};
-			if(this.options.onInvalid(elem, rule, msg) === true){
+			if(this.options.onInvalid(elem, rule, msg, this) === true){
 				elem.insert({after: this.errorTemplate.evaluate(fillTemp)});
 			}
 			this.form.addClassName(this.options.invalidFormClass);
