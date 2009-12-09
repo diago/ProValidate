@@ -26,7 +26,7 @@ var ProValidate = (function(){
 	
 	var ProValidate = Class.create();
 	
-	ProValidate.Version = '0.4.1';
+	ProValidate.Version = '0.5.0';
 	
 	ProValidate.options = {
 			
@@ -169,7 +169,7 @@ var ProValidate = (function(){
 			var elem = this._realElement(elem);
 			var eid = elem.identify();
 			var valid = false;
-			var rule, msg, fillTemp;
+			var rule, msg, params;
 			if(Object.isString(rules)){
 				var container = this.elements.get(eid);
 				allRules = $H();
@@ -182,8 +182,9 @@ var ProValidate = (function(){
 			
 			allRules.each(function(pair){
 				rule = pair.key;
-				msg = pair.value;
-				if(!(valid = this._test(elem, rule))){
+				params = pair.value.get('params');
+				msg = pair.value.get('message');
+				if(!(valid = this._test(elem, rule, params))){
 					this.trigger(elem, rule, msg);
 					throw $break;
 				}
@@ -225,13 +226,16 @@ var ProValidate = (function(){
 		 */
 		addRule: function(elem, rule, message){
 			var elem = this._realElement(elem);
+			var realRule = this._ruleAndParams(rule);
+			var rule = realRule[0];
+			var params = (realRule.length>1) ? realRule[1] : false;
 			var rules;
 			var message = message || this._findErrorMessage(elem, rule);
 			if( rules = this.elements.get(elem.identify()) ){
-				rules.set(rule, message);
+				rules.set(rule, $H({message: message, params: params}));
 			} else {
-				var rules = $H();
-				rules.set(rule, message);
+				rules = $H();
+				rules.set(rule, $H({message: message, params: params}));
 				this.elements.set(elem.identify(), rules);				
 			}
 			return this;
@@ -342,18 +346,14 @@ var ProValidate = (function(){
 			}
 		},
 		
-		_test: function(elem, rule){
+		_test: function(elem, rule, params){
 			var elem = $(elem);
-			var rule = this._ruleAndParams(rule);
-			
-			if(Object.isArray(rule)){
-				var r = rule[0];
-				var p = rule[1];
-				if(Object.isFunction(ProValidate.Validation[r]))
-					return ProValidate.Validation[r](elem, p);
-			} else {
-				if(Object.isFunction(ProValidate.Validation[rule]))
+			if(Object.isFunction(ProValidate.Validation[rule])){
+				if(params){
+					return ProValidate.Validation[rule](elem, params);
+				} else { 
 					return ProValidate.Validation[rule](elem);
+				}
 			}
 			return true;
 		},
@@ -366,7 +366,7 @@ var ProValidate = (function(){
 		},
 		
 		_findErrorMessage: function(elem, rule){
-			return this.cannedMessages.get(rule.match(/[\w]+/).first()) || this.options.defaultInvalidMessage;
+			return this.cannedMessages.get(rule) || this.options.defaultInvalidMessage;
 		},
 		
 		_realElement: function(elem){
@@ -375,7 +375,7 @@ var ProValidate = (function(){
 		
 		_ruleAndParams: function(rule){
 			var match = rule.match(/(\w.*)\[(.*)\]/);
-			return (match === null) ? rule : [match[1],match[2]];
+			return (match === null) ? [rule] : [match[1],match[2]];
 		}
 	};
 	
