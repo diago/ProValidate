@@ -26,7 +26,7 @@ var ProValidate = (function(){
 	
 	var ProValidate = Class.create();
 	
-	ProValidate.Version = '0.3.0';
+	ProValidate.Version = '0.3.1';
 	
 	ProValidate.options = {
 			
@@ -365,7 +365,7 @@ var ProValidate = (function(){
 		},
 		
 		_findErrorMessage: function(elem, rule){
-			return this.cannedMessages.get(rule) || this.options.defaultInvalidMessage;
+			return this.cannedMessages.get(rule.match(/[\w]+/).first()) || this.options.defaultInvalidMessage;
 		},
 		
 		_realElement: function(elem){
