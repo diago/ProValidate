@@ -26,14 +26,21 @@ var ProValidate = (function(){
 	
 	var ProValidate = Class.create();
 	
-	ProValidate.Version = '0.5.0';
+	ProValidate.Version = '0.6.0';
 	
 	ProValidate.options = {
 			
 			/**
-			 * If true the form will submit as normal. False causes Event.stop();
+			 * If true the form will submit as normal. 
+			 * Use 'AJAX' to have the form submit with form.request. requestOptions is passed in. 
+			 * False causes Event.stop();
 			 */
 			submitOnValid: true,			
+			
+			/**
+			 * These options are passed in to form.request if submitOnValid is 'AJAX'
+			 */
+			requestOptions: {},
 			
 			/**
 			 * Class that is added to the form elements that are invalid
@@ -341,7 +348,10 @@ var ProValidate = (function(){
 				ev.stop();
 				invalid.first().select();
 			} else {
-				if( ! this.options.submitOnValid ) ev.stop();
+				if( this.options.submitOnValid === 'AJAX' ){
+					ev.stop();
+					this.form.request(this.options.requestOptions);
+				} else if(! this.options.submitOnValid ) ev.stop();
 				this.options.onFormValid(this);
 			}
 		},
