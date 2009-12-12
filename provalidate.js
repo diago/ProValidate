@@ -26,7 +26,7 @@ var ProValidate = (function(){
 	
 	var ProValidate = Class.create();
 	
-	ProValidate.Version = '0.6.0';
+	ProValidate.Version = '0.6.1';
 	
 	ProValidate.options = {
 			
@@ -126,7 +126,9 @@ var ProValidate = (function(){
 	
 	ProValidate.prototype = {
 		initialize: function(form, options){
-			this.options = Object.extend(ProValidate.options, options || {});
+			this.options = {}; 
+			Object.extend(this.options, ProValidate.options);
+			Object.extend(this.options, options || {});
 			
 			this.form = $(form);
 			
