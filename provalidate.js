@@ -1,7 +1,7 @@
 /*
 The MIT License
 
-Copyright (c) 2009 Heath Padrick
+Copyright (c) 2010 Heath Padrick
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,410 +23,257 @@ THE SOFTWARE.
 */
 
 var ProValidate = (function(){
-	
-	var ProValidate = Class.create();
-	
-	ProValidate.Version = '0.6.1';
-	
-	ProValidate.options = {
-			
-			/**
-			 * If true the form will submit as normal. 
-			 * Use 'AJAX' to have the form submit with form.request. requestOptions is passed in. 
-			 * False causes Event.stop();
-			 */
-			submitOnValid: true,			
-			
-			/**
-			 * These options are passed in to form.request if submitOnValid is 'AJAX'
-			 */
-			requestOptions: {},
-			
-			/**
-			 * Class that is added to the form elements that are invalid
-			 */
-			errorClass: 'invalid',
-			
-			/**
-			 * Class that's given to the error messages in errorTemplate.
-			 */
-			errorMessageClass: 'errorMessage',
-			
-			/**
-			 * By default this is inserted under the invalid element. You can make what ever element you need.
-			 * The input element id, errorMessageClass and message are filled using Prototype's Template#evaluate.
-			 * Inorder for clearInvalid(elem) to work you need to add #{elementId} to the class 
-			 */
-			errorTemplate: '<span class="#{elementId} #{errorMessageClass}">#{message}</span>',
 
-			/**
-			 * Causes ProValidate to check Element#store for a 'provalidate' {rules: message} object.
-			 * Set to false if you are adding rules manually with addRule or addRules to save a loop.
-			 */
-			checkStore: true,
-			
-			/**
-			 * Class name given to an invalid form
-			 */
-			invalidFormClass: 'invalidForm',
-			
-			/**
-			 * Use to setup default messages for validations. 
-			 * 
-			 * @example {rule: "Message", rule2: "Message"}
-			 */
-			cannedMessages: {
-				required: 'Required',
-				phone: 'Invalid phone number',
-				email: 'Invalid email',
-				alpha: 'Letters only',
-				alpah_numeric: 'Numbers and letters only',
-				numeric: 'Invalid number',
-				date: 'Invalid date',
-				digit: 'Numbers only',
-				price: 'Invalid price'
-			},
-			
-			/**
-			 * If ProValidate can't find a message this is the default for any invalid elements.
-			 */
-			defaultInvalidMessage: 'Invalid',
-			
-			/**
-			 * Runs when the class is initialized
-			 * @param this The entire instance is passed in
-			 */
-			onStart: Prototype.emptyFunction,
-			
-			/**
-			 * Runs when an element is invalid
-			 * @param element The element that is being validated
-			 * @param rule The rule that failed
-			 * @param message The message associated with the rule
-			 * @param this The entire instance is passed in
-			 * 
-			 * Returns true here to trigger the default invalid method. Do not
-			 * return true unless you want the default to run.
-			 */
-			onInvalid: function(){return true;},
-			
-			/**
-			 * Runs when an element is valid
-			 * @param element The element that is being validated
-			 * @param this The entire instance is passed in
-			 */
-			onValid: Prototype.emptyFunction,
-			
-			/**
-			 * Called when everything passes validation
-			 * @param this The entire instance is passed in
-			 */
-			onFormValid: Prototype.emptyFunction
-	};
-	
-	ProValidate.prototype = {
-		initialize: function(form, options){
-			this.options = {}; 
-			Object.extend(this.options, ProValidate.options);
-			Object.extend(this.options, options || {});
-			
-			this.form = $(form);
-			
-			this.elements = $H();
-			this.errorTemplate = new Template(this.options.errorTemplate);
-			this.cannedMessages = $H(this.options.cannedMessages);
-			this._storedRulesAdded = false;
-			
-			this.form.observe('submit', this._validate.bindAsEventListener(this));
+    var ProValidate = Class.create();
+    
+    ProValidate.Version = '1.0.0';
+    
+    ProValidate.Debug = false;
+    
+    ProValidate.instances = $H();
+    
+    ProValidate.instance = function(form, options){
+        var instance = ProValidate.instances.get($(form).identify());
+        
+        if(instance && options){
+        	instance.setOptions(options);
+        } else if(!instance){
+        	instance = new ProValidate(form, options);
+        	ProValidate.instances.set($(form).identify(), instance);
+        }
+        
+        return instance;
+    };
+    
+    ProValidate.lang = {
+    	defaultMessages: {
+	    	required: 'Required',
+	    	phone: 'Invalid phone number',
+	    	email: 'Invalid email',
+	    	alpha: 'Letters only',
+	    	alpha_numeric: 'Numbers and letters only',
+	    	numeric: 'Invalid number',
+	    	date: 'Invalid date',
+	    	digit: 'Numbers only',
+	    	price: 'Invalid price',
+	    	matches: 'Must confirm'
+    	}
+    };
+    
+    ProValidate.options = {
+    	/**
+    	 * @var str Name used in Element#store for rules and messages
+    	 */
+    	storeName: 'provalidate',
+    	
+    	/**
+    	 * @var str name of the hanlder class to instantiate
+    	 */
+    	handler: 'ProValidate.Handler'
+    };
+    
+    ProValidate.prototype = {
+        initialize: function(form, options){
+            this.options = {};
+            Object.extend(this.options, ProValidate.options);
+            Object.extend(this.options, options || {});
 
-			this.options.onStart(this);
-			
-			/* May add inline option later using html5 data-* attribute
-			$$('form#'+this.form.identify()+' [data-provalidate]').each(function(elem){
-				this.inlineRules(elem);
-			}.bind(this));			
-			*/
-			
-			// focus errors that could have been added from the server
-			var current_errors = $$('.'+this.options.errorClass);
-			if(current_errors.length > 0) current_errors.first().select();
-		},
-		
-		/* May add inline option later using html5 data-* attribute
-		inlineRules: function(elem){
-			var elem = $(elem);
-			rules = elem.readAttribute('data-provalidate');
-			
-			// stay valid
-			if(! ProValidate.HTML5) elem.removeAttribute('data-provalidate');
-			
-			if(rules){
-				this._addRules(elem, this._toRules(rules));
-			}
-			return this;
-		},
-		*/
-		
-		/**
-		 * Validates an element to its rules
-		 * @param elem The element to validate
-		 * @param rules Can be a string for one rule or a hash of rules messages to use.
-		 * @return bool
-		 */
-		validate: function(elem, rules){
-			
-			var elem = this._realElement(elem);
-			var eid = elem.identify();
-			var valid = false;
-			var rule, msg, params;
-			if(Object.isString(rules)){
-				var container = this.elements.get(eid);
-				allRules = $H();
-				allRules.set(rules, container.get(rules));
-			} else if(Object.isUndefined(rules)){
-				allRules = this.elements.get(eid);
-			} else {
-				allRules = $H(rules);
-			}
-			
-			allRules.each(function(pair){
-				rule = pair.key;
-				params = pair.value.get('params');
-				msg = pair.value.get('message');
-				if(!(valid = this._test(elem, rule, params))){
-					this.trigger(elem, rule, msg);
-					throw $break;
-				}
-			}.bind(this));
-				
-			this.options.onValid(elem, this);
-			
-			return valid;
-		},
-		
-		/**
-		 * Triggers an error for an element.
-		 * 
-		 * @param elem Element to trigger the error on
-		 * @param rule <string> Rule to trigger. Used to find an error message
-		 * @param msg <optional> Message to display
-		 */
-		trigger: function(elem, rule, msg){
-			var elem = this._realElement(elem);
-			elem.addClassName(this.options.errorClass);
-			fillTemp = {
-				elementId: elem.identify(),
-				errorMessageClass: this.options.errorMessageClass,
-				message: msg || this._findErrorMessage(elem, rule)
-			};
-			if(this.options.onInvalid(elem, rule, msg, this) === true){
-				elem.insert({after: this.errorTemplate.evaluate(fillTemp)});
-			}
-			this.form.addClassName(this.options.invalidFormClass);
-			return this;
-		},
-		
-		/**
-		 * Manual adds a single rule to an element
-		 * 
-		 * @param elem Element to add the rule to
-		 * @param rule <string> Rule to add
-		 * @param msg <optional> Message to display
-		 */
-		addRule: function(elem, rule, message){
-			var elem = this._realElement(elem);
-			var realRule = this._ruleAndParams(rule);
-			var rule = realRule[0];
-			var params = (realRule.length>1) ? realRule[1] : false;
-			var rules;
-			var message = message || this._findErrorMessage(elem, rule);
-			if( rules = this.elements.get(elem.identify()) ){
-				rules.set(rule, $H({message: message, params: params}));
-			} else {
-				rules = $H();
-				rules.set(rule, $H({message: message, params: params}));
-				this.elements.set(elem.identify(), rules);				
-			}
-			return this;
-		},
-		
-		/**
-		 * Add multiple rules and messages to an element
-		 * 
-		 * @param elem The element to add the rules to
-		 * @param rules <object> {} of rules: messages
-		 */
-		addRules: function(elem, rules){
-			if(Object.isArray(rules) || typeof rules !== "object") throw ('rules must be an object {}');
-			var x;
-			for(x in rules){
-				this.addRule(elem, x, rules[x]);
-			}
-			return this;
-		},
-		
-		/**
-		 * Removes a rule from an element
-		 * 
-		 * @param elem  The element to remove the rule from
-		 * @param rules <string> rule name to remove
-		 */
-		removeRule: function(elem, rule){
-			var elem = this._realElement(elem);
-			var eid = elem.identify();
-			var rules = this.elements.get(eid);
-			rules.unset(rule);
-			this.elements.set(eid, rules);
-			return this;
-		},
-		
-		add: function(elem){
-			this._current = elem;
-			return this;
-		},
-		
-		rule: function(rule, message){
-			this.addRule(this._current, rule, message || false);
-			return this;
-		},
-		
-		/**
-		 * Adds an elements stored rules from Element#store
-		 * @param elem
-		 * @return this
-		 */
-		storedRules: function(elem){
-			var rules;
-			if(rules = $(elem).retrieve('provalidate')){
-				this.addRules(elem, rules);
-				// cleanup
-				$(elem).store('provalidate', null);
-			}
-			return this;
-		},
-		
-		/**
-		 * Clears all invalid messages and classes.
-		 * If an element is given it will only clear messages and classes
-		 * related to it.
-		 * 
-		 * @param elem <optional> Element to clear 
-		 */
-		clearInvalid: function(elem){
-			if(elem){
-				var elem = this._realElement(elem);
-				elem.removeClassName(this.options.errorClass);
-				$$('.'+elem.identify()).invoke('remove');
-			} else {
-				$$('.'+this.options.errorMessageClass).invoke('remove');
-				$$('.'+this.options.errorClass).invoke('removeClassName', this.options.errorClass);
-				this.form.removeClassName(this.options.invalidFormClass);
-			}
-			return this;
-		},
-		
-		_validate: function(ev){
-			// run through elem stores to find rules and messages
-			if(!this._storedRulesAdded && this.options.checkStore){
-				this.form.getElements().each(function(elem){
-					this.storedRules(elem);
-				}.bind(this));
-				this._storedRulesAdded = true;
-			}
-			
-			var elem = ev.element();
-			var invalid;
-			this.clearInvalid();
-			this.elements.each(function(pair){
-				
-				elem = pair.key;
-				rules = pair.value;
-				this.validate(elem, rules);
-				
-			}.bind(this));
-			
-			invalid = $$('.'+this.options.errorClass);
-			if(invalid.length > 0){
-				ev.stop();
-				invalid.first().select();
-			} else {
-				if( this.options.submitOnValid === 'AJAX' ){
-					ev.stop();
-					this.form.request(this.options.requestOptions);
-				} else if(! this.options.submitOnValid ) ev.stop();
-				this.options.onFormValid(this);
-			}
-		},
-		
-		_test: function(elem, rule, params){
-			var elem = $(elem);
-			if(Object.isFunction(ProValidate.Validation[rule])){
-				if(params){
-					return ProValidate.Validation[rule](elem, params);
-				} else { 
-					return ProValidate.Validation[rule](elem);
-				}
-			}
-			return true;
-		},
-		
-		_addRules: function(elem, rules){
-			var elem = $(elem).identify();
-			for(i=0;i<rules.length;i++){
-				this.addRule(elem, rules[i]);
-			}
-		},
-		
-		_findErrorMessage: function(elem, rule){
-			return this.cannedMessages.get(rule) || this.options.defaultInvalidMessage;
-		},
-		
-		_realElement: function(elem){
-			return $(elem) || $$('#'+this.form.identify()+' [name="'+elem+'"]').first();
-		},
-		
-		_ruleAndParams: function(rule){
-			var match = rule.match(/(\w.*)\[(.*)\]/);
-			return (match === null) ? [rule] : [match[1],match[2]];
-		}
-	};
-	
-	ProValidate.Validation = {
-		datePattern: '\\d{1,2}\\/\\d{1,2}\\/\\d{4}',
+            this.form = $(form).observe('submit', function(ev){
+            	ev.stop();
+            	this.handler.clearErrors(); // start fresh
+            	this.validate();
+            }.bind(this));
+            this.elements = this.form.getElements();
+
+            var handler = getObject(this.options.handler);
+            this.handler = new handler(this.form.identify(), this.options);
+        },
+        
+        validate: function(elem, trigger){
+        	var elem = elem || $(elem), trigger = (trigger !== false);
+        	if(!elem) { // validate the entire form
+        		var failures = this.elements.map(function(elem){
+        			return this._validateElement(elem, trigger);
+        		}.bind(this));
+        		if(failures.indexOf(false) === -1) this.form.fire('form:valid'); 
+        	} else return this._validateElement(elem, trigger);
+        },
+        
+        _validateElement: function(elem, trigger){
+        	var rules = elem.retrieve(this.options.storeName);
+        	if(!rules) return true;
+        	var failures = [], failed = false, x;
+        	for(x in rules){        		
+        		try {
+        			failed = !ProValidate.rules[x](elem, rules[x].parameters || false, this.form);
+        		} catch(e) {
+        			if(ProValidate.Debug) throw e;
+        		}        		
+        		if(failed) failures.push(x);
+        	}
+        	if(failures.length > 0) {
+        		if(trigger) {
+                	this.handler.clearErrors(elem); // start clean
+        			this.handler.onFailed(elem, failures);
+        		}
+        		return false;
+        	}
+        	else{
+        		if(trigger) this.handler.onValid(elem);
+        		return true;
+        	}
+        },
+        
+        setOptions: function(options){
+        	Object.extend(this.options, options || {});
+        },
+        
+        rules: function(elem, rules){
+            var elem = ProValidate.findRealElement(this.form, elem);
+            if(elem.nodeName.toUpperCase() === 'FORM') this.addRules(rules);
+            else this.addElementRules(elem, rules);
+            return elem;
+        },
+        
+        removeRules: function(elem, rules){
+        	var store, elem = ProValidate.findRealElement(this.form, elem);
+        	store = elem.retrieve(this.options.storeName);
+        	
+        	if(! rules) store = {};
+        	else if(Object.isArray(rules)) for(var r=0;r<rules.length;r++) delete store[rules[r]];        		
+        	else if(Object.isString(rules)) delete store[rules];
+        	
+        	elem.store(this.options.storeName, store);
+        	return elem;
+        },
+        
+        addRules: function(rules){
+        	for(var x in rules){
+        		this.addElementRules(x, rules[x]);
+        	}
+        	return this.form;
+        },
+        
+        addElementRules: function(elem, rules){
+        	var elem = ProValidate.findRealElement(this.form, elem);
+        	var data = rules;
+        	if(Object.isString(data)){
+        		var rules = {};
+        		rules[data] = {};
+        	}
+        	elem.mergeStore(this.options.storeName, rules);
+        	return elem;
+        }    
+    };
+    
+    
+    /**
+     * Search for the elem given. First tries to return an element found
+     * by id, next tries to return an element with a name that begins with elem
+     * 
+     * @TODO somehow needs to support nested names
+     * 
+     * @var form str form to search in
+     * @var elem str elem to look for
+     * @return elem
+     */
+    ProValidate.findRealElement = function(form, elem){
+        return $(elem) || $(form).select('[name^="'+elem+'"]').first();    	
+    };
+    
+    ProValidate.Handler = Class.create();
+    
+    ProValidate.Handler.options = {
+    	defaultInvalidMessage: 'Invalid',
+    	errorMessageClassName: 'errorMessage',
+    	invalidElementClassName: 'invalid'
+    };
+    
+    ProValidate.Handler.prototype = {
+    	initialize: function(form, options){
+    		this.options = {};
+    		Object.extend(this.options, ProValidate.Handler.options);
+    		Object.extend(this.options, options || {});
+
+    		this.form = $(form);
+    	},
+        onFailed: function(elem, failures){
+            var elem = $(elem),            
+            rules = elem.retrieve(this.options.storeName),
+            rule = failures[0],
+            message = rules[rule].message;
+            this.triggerError(elem, message || ProValidate.lang.defaultMessages[rule] || this.options.defaultInvalidMessage);
+        },
+        triggerError: function(elem, message){
+            var elem = ProValidate.findRealElement(this.form, elem), 
+            span = Element('span')
+            .addClassName(elem.identify())
+            .addClassName(this.options.errorMessageClassName)
+            .update(message);
+            
+            elem.addClassName(this.options.invalidElementClassName).insert({after: span});
+        },
+        onValid: function(elem){
+            $(elem).removeClassName(this.options.invalidElementClassName);
+            $$('.'+elem.identify()).invoke('remove');
+        },
+        clearErrors: function(elem){
+        	var elem = $(elem);
+        	if(elem){
+        		elem.removeClassName(this.options.invalidElementClassName);
+        		$$('span.'+elem.identify()).invoke('remove');
+        	} else {
+	            this.form.select('.'+this.options.errorMessageClassName).invoke('remove');
+	            this.form.select('.'+this.options.invalidElementClassName)
+	            .invoke('removeClassName', this.options.invalidElementClassName);
+        	}
+        }
+    };
+    
+    ProValidate.rules = {
+    	datePattern: '\\d{1,2}\\/\\d{1,2}\\/\\d{4}',
 		required: function(elem){
-			var value = $F(elem);
-			return !value.empty();
+    		var type = elem.readAttribute('type'),
+    		realRule = '_required_'+type;
+    		try {
+    			return ProValidate.rules[realRule](elem);
+    		} catch(e) {
+    			if(ProValidate.Debug) throw e;
+    		}
+		},
+		_required_text: function(elem){
+			return !$F(elem).empty();
+		},
+		_required_password: function(elem){
+			return ProValidate.rules._required_text(elem);
+		},
+		_required_checkbox: function(elem, p, form){
+			var elem = $(elem);			
+			return $(form).select('[name="'+elem.readAttribute('name')+'"]:checked').length > 0;
+		},
+		_required_radio: function(elem, p, form){
+			var elem = $(elem);
+			radios = $(form).select('[name="'+elem.readAttribute('name')+'"]');
+			return radios.find(function(radio){ return (radio.getValue() !== null); });			
 		},
 		length: function(elem, params){
-			var size;
-			var value = $F(elem);
-			var status = false;
-			var param;
+			var status = false, value = $F(elem), size = value.length;			
+			if(value.empty()) return true;			
 			
-			if(value.empty()) return true;
-			if(!Object.isString(value)) return false;
-			
-			size = value.length;
-			
-			param = params.split(',');
-			if( param.length > 1){
+			if(Object.isArray(params) && params.length === 2){
 				var min = param[0] * 1;
 				var max = param[1] * 1;
 				if (size >= min && size <= max){
 					status = true;
 				}
-			} else {
-				status = (size === (params * 1));
-			}
+			} else status = (size === (params * 1));
+			
 			return status;
 		},
-		matches: function(elem, param){
-			var value = $F(elem);
-			var matches = false;
-			var match = $$('[name="'+param+'"]').first() || $(param);
-			if(match){
-				matches = (value === $F(match));
-			}
+		matches: function(elem, param, form){
+			var value = $F(elem), matches = false,
+			match = $(form).select('[name="'+param+'"]').first() || $(param);
+			if(match) matches = (value === $F(match));
 			return value.empty() ? true : matches;
 		},
 		alpha: function(elem){
@@ -438,13 +285,12 @@ var ProValidate = (function(){
 			return value.empty() ? true : /^[a-zA-Z0-9]*$/.test(value);
 		},
 		digit: function(elem){
-			var value = $F(elem);
-			return /^\d*$/.test(value);
+			return /^\d*$/.test($F(elem));
 		},
 		numeric: function(elem, decChar){
-			var value = $F(elem);
-			var dec = decChar || '.';
-			var exp = new RegExp('^-?[0-9]*\\'+dec+'?[0-9]*$');
+			var value = $F(elem),
+			dec = decChar || '.',
+			exp = new RegExp('^-?[0-9]*\\'+dec+'?[0-9]*$');
 			return value.empty() ? true : exp.test(value);			
 		},
 		email: function(elem){
@@ -452,28 +298,115 @@ var ProValidate = (function(){
 			return value.empty() ? true : /^[a-zA-Z][\w\.-]*[a-zA-Z0-9]@[a-zA-Z][\w\.-]*[a-zA-Z0-9]\.[a-zA-Z][a-zA-Z\.]*[a-zA-Z]$/.test($F(elem));
 		},
 		phone: function(elem, params){
-			var value = $F(elem);
-			var length;
-			var realNumber = value.gsub(/\D/, '');
-			if(Object.isUndefined(params)){
-				length = [7, 10, 11];
-			} else {
-				length = params.split(',').map(function(num){
-					return parseInt(num, 10);
-				});
-			}
-			return value.empty() ? true : ((length.indexOf(realNumber.length) === -1) ? false : true);
+			var value = $F(elem),
+			realNumber = value.gsub(/\D/, ''),
+			length = params || [7, 10, 11];
+			return value.empty() ? true : length.indexOf(realNumber.length) !== -1;
 		},
 		date: function(elem, pattern){
-			var value = $F(elem);
-			var format = new RegExp(pattern || ProValidate.Validation.datePattern);
+			var value = $F(elem),
+			format = new RegExp(pattern || ProValidate.rules.datePattern);
 			return value.empty() ? true : format.test(value);
 		},
 		price: function(elem){
 			var value = $F(elem);
 			return value.empty() ? true : /^\$?(\d{1,3}\,?\d{3}|\d{1})*(\.?\d{2})?$/.test(value);
 		}
-	};
-	
-	return ProValidate;
+    };
+
+    
+    // add the methods    
+    var formElementMethods = {
+	    validate: function(elem){
+	        var elem = $(elem), form = elem.up('form');
+	        ProValidate.instance(form).validate(elem);
+	        return elem;
+	    },
+	    valid: function(elem){
+	        var elem = $(elem), form = elem.up('form');
+	        return ProValidate.instance(form).validate(elem, false);        	
+	    },
+	    rules: function(elem, rules){
+	        var elem = $(elem), form = elem.up('form');
+	        ProValidate.instance(form).rules(elem, rules);
+	        return elem;
+	    },
+	    rule: function(elem, rule){ // just an alias
+	    	return $(elem).rules(rule);
+	    },
+	    removeRules: function(elem, rules){
+	        var elem = $(elem), form = elem.up('form');	    	
+	    	ProValidate.instance(form).removeRules(elem, rules);
+	    	return elem;
+	    },
+	    removeRule: function(elem, rules){// just an alias
+	    	return $(elem).removeRules(rules);
+	    },
+	    error: function(elem, message){
+	        var elem = $(elem), form = elem.up('form');
+	    	ProValidate.instance(form).handler.triggerError(elem, message);
+	    	return elem;
+	    },
+	    clearError: function(elem){
+	        var elem = $(elem), form = elem.up('form');
+	    	ProValidate.instance(form).handler.clearErrors(elem);
+	    	return elem;
+	    }    		
+    };
+    
+    Element.addMethods('INPUT', formElementMethods);
+    Element.addMethods('SELECT', formElementMethods);
+    Element.addMethods('TEXTAREA', formElementMethods);
+    
+    Element.addMethods('FORM', {
+        validate: function(form, options){
+            ProValidate.instance(form, options).validate();
+            return form;
+        },
+        rules: function(form, rules, options){
+        	ProValidate.instance(form, options).rules(form, rules);
+        	return form;
+        },
+        errors: function(form, errors){
+        	for(var x in errors){
+            	ProValidate.instance(form).handler.triggerError(x, errors[x]);	
+        	}
+        	return form;
+        },
+        clearErrors: function(form){
+        	ProValidate.instance(form).handler.clearErrors();
+        	return form;
+        }
+    });
+    
+    Element.addMethods({
+    	mergeStore: function(elem, storeName, data){
+    		var allData = elem.retrieve(storeName);
+    		if(Object.isUndefined(allData)){
+    			// first time storage
+    			return elem.store(storeName, data);
+    		}    		
+    		Object.extend(allData, data);
+    		return elem.store(storeName, allData);
+    	}
+    });
+    
+    // funcs
+    /**
+     * provided by tfluehr @ http://www.tfluehr.com
+     * 
+     * creates the needed obj for the instantiation of the handler
+     */
+    var getObject = function(parts){
+	    if (typeof(parts) == 'string') parts = parts.split('.');
+	    var obj = window;
+	    for (var i = 0, p; obj && (p = parts[i]); i++)
+	    {
+	    	obj = (p in obj ? obj[p] : undefined);
+	    }
+	    return obj;
+    };
+    
+    return ProValidate;
+
 })();

@@ -1,51 +1,29 @@
+h1. ProValidate has had a make over!
+
+Please give me some time to rewrite the docs.
+
+
 h1. ProValidate
 
 A validation class using the Prototype Javascript Library.
 
+ProValidate attaches methods to form elements like all native Prototype methods.
+
+You can also create your own handlers that will deal with error messages easily. More on that soon.
+
 h2. Examples
 
-You can add rules several different ways depending on your needs. When adding elements to rules you can use either the id or the 
-name of the form element.
+<pre><code type="javascript">
+$('login_name').rule('required');
 
-Rules added manually:
-<pre><code class="javascript">
-<script type="text/javascript" src="/js/prototype/prototype.js"></script>
-<script type="text/javascript" src="/js/provalidate/provalidate.js"></script>
-<script>
-document.observe('dom:loaded', function(){
-    var provalidate = new ProValidate('infoForm');
-    var usernameRules = {
-    	'required': false, // uses the default required message
-    	'length[1,10]': 'Must be between 1 and 10 chars',
-    	'alpha_numeric': false
-    };
-    provalidate.addRules('username', usernameRules);
-    
-    provalidate.add('phone').rule('required').rule('phone', 'Please enter a valid phone number');
-    
-    provalidate.addRule('email', 'email', 'Must be a valid email address');
-});
-</script>
-</code></pre>
-
-I have my backend system generate element storage which is another option for adding rules and messages:
-
-<pre><code class="javascript">
-document.observe('dom:loaded', function(){
-	$('login_date').store('provalidate',{'date':'Date must be mm/dd/yyyy'});
-	$('login_alpha').store('provalidate',{'alpha':'Must contain only letters'});
-	$('login_alpha_numeric').store('provalidate',{'alpha_numeric':'Must contain only letters and numbers.'});
-	$('login_numeric').store('provalidate',{'numeric':'Must contain only numbers'});
-	$('login_phone').store('provalidate',{'phone':'Invalid phone'});
-	$('login_email').store('provalidate',{'email':'Invalid email'});
-	$('login_password').store('provalidate',{'required':'Required','matches[password2]':'Must match Password2'});
-	$('login_password2').store('provalidate',{'required':'Required','matches[password]':'Must match Password'});
-	$('login_state').store('provalidate',{'required':'Required'});
-	$('login_web_site').store('provalidate',{'url':'Must be a full web address'});
+$('login_form').observe('form:valid', function(ev){
+    this.request();
 });
 </code></pre>
 
-ProValidate will run through and add the validation rules and messages from the storage.
+more coming soon!
+
+**There are more examples on the "demo page":http://dev.outlandweb.com/projects/demos/provalidate**
 
 h2. Built in rules
 
