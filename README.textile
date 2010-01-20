@@ -1,15 +1,12 @@
-h1. ProValidate has had a make over!
-
-Please give me some time to rewrite the docs.
-
+__New Doc is still in progress__
 
 h1. ProValidate
 
-A validation class using the Prototype Javascript Library.
+A validation class using the Prototype Javascript Library version 1.6.1.
 
 ProValidate attaches methods to form elements like all native Prototype methods.
 
-You can also create your own handlers that will deal with error messages easily. More on that soon.
+You can also create your own handlers that will deal with error messages easily. A tutorial on creating a handler is coming soon.
 
 h2. Examples
 
@@ -21,50 +18,183 @@ $('login_form').observe('form:valid', function(ev){
 });
 </code></pre>
 
-more coming soon!
+**There is an example on the "demo page":http://dev.outlandweb.com/projects/demos/provalidate**
 
-**There are more examples on the "demo page":http://dev.outlandweb.com/projects/demos/provalidate**
+h2. Methods
+
+ProValidate extends both Form and Form.Element to add everything you need for validation.
+
+Forms are added to ProValidate by calling any of the methods below. Once the form is being controlled by ProValidate the onSubmit event will be stoped. Simply observe your forms for the custom event 'form:valid'.
+
+<pre><code type="text/javascript">
+$('myForm').observe('form:valid', function(){ this.request(); });
+</code></pre>
+
+h3. Form
+
+**Form.rules(form, rules, options)**
+
+Adds rules to elements within the form. Rules should be an object with either the id of the element or the name of the element to its corresponding rules, parameters, and messages.
+
+<pre><code type="text/javascript">
+var rules = {
+    user_name: {
+        required: {message: "You must enter a user name"},
+        email: {message: "Should me an email address"}
+    },
+    password: {
+        matches: { // will use the default message
+            parameters: 'confirm_password'
+        }
+    }
+    confirm_password: 'required' // will use the default message
+};
+
+/*
+options can be passed to most form methods or set statically using ProValidate.options and Provalidate.Handler.options
+*/
+var options = {
+
+/*
+provalidate uses Element#store to store the rules on an element. You can change the retrieval name. Default is 'provalidate'
+*/
+    storeName: 'myRules',
+
+    // sets the handler to be used with the form
+	handler: 'ProValidate.Handler'
+
+/*
+The entire options object is passed to the handler for its options below are the defaults of the included handler
+*/
+	defaultInvalidMessage: 'Invalid',
+	errorMessageClassName: 'errorMessage',
+	invalidElementClassName: 'invalid'
+};
+
+$('login_form').rules(rules, options).observe('form:valid', function(){
+    alert(this.serialize());
+});
+</code></pre>
+
+**Form.validate(form, options)**
+
+Validates all form elements and triggers errors if need be. If there are no errors 'form:valid' is fired.
+$('myForm').validate();
+
+**Form.errors(form, errors)**
+
+Triggers errors on the passed in elements. This is simple a batch process for Element.error();
+
+var errors = {login_name: 'Bad Name', password: 'Bad Password'};
+$('myForm').errors(errors);
+
+**Form.clearErrors(form)**
+
+Clears all errors off the form.
+$('myForm').clearErrors();
+
+h3. Form.Element
+
+**Form.Element.rules(elem, rules)**
+
+If rules is an object all will be added to the element. 
+var rules = {length: {parameters: 10}};
+
+You can also pass a string to add a single rule.
+
+**Form.Element.rule(elem, rule)**
+
+Just an alias to rules above incase you are passing a string as the rule. 
+$('input').rule('required');
+
+**Form.Element.removeRules(elem, rules)**
+
+Removes all, one or chosen rules from an element. 
+$('input').removeRules(); will remove all rules on input
+$('input').removeRules(['required', 'length']); will remove required and length rules only
+
+**Form.Element.removeRule(elem, rule)**
+
+Removes a single rule. $('input').removeRule('required');
+
+**Form.Element.validate(elem)**
+
+Validates the element and triggers any errors. 
+$('input').validate();
+
+**Form.Element.valid(elem)**
+
+Returns true or false if the element passes all validation. __This will not trigger an error.__
+$('input').valid();
+
+**Form.Element.error(elem, message)**
+
+Triggers an error on an element.
+$('input').error('You must be kidding me!');
+
+**Form.Element.clearError(elem)**
+
+Clears errors off an element.
+$('input').clearError();
+
+
+
 
 h2. Built in rules
 
-The built in rules follow the "Kohana":http://www.kohanaphp.org validation conventions.
+Rules are passed in as either strings or objects with parameters and a message. ProValidate.lang.defaultInvalid houses the default messages. To set your own simply override or extend them.
 
 h3. alpha
 
-No Parameters - Value must contain only letters
+No Parameters
+
+Value must contain only letters
 
 h3. alpha_numeric
 
-No Parameters - Values must contain only letters and numbers
+No Parameters
+
+Value must contain only letters and numbers
 
 h3. date
 
-date[pattern] - By default date checks for dd/dd/dddd but you can change the pattern to whatever you like.
-    To change the pattern globally, add **Provalidate.Validation.dateFormat = 'regexPattern'** before calling new ProValidate. 
-    You can also pass the pattern in as a param. **You must remember to use RegExp conventions.** Example /\d/ would be '\\d'.
+parameter - regex date pattern
+
+By default date checks for dd/dd/dddd but you can change the pattern to whatever you like.
+To change the pattern globally, add **ProValidate.rules.dateFormat = 'regexPattern'**. 
+You can also pass the pattern in as a param. **You must remember to use RegExp conventions.** Example /\d/ would be '\\d'.
 
 h3. digit
 
-No Parameters - Value must contain only numbers
+No Parameters
+
+Value must contain only numbers
 
 h3. email
 
-No Parameters - Value must be a valid user@domain.tld 
+No Parameters
+
+Value must be a valid user@domain.tld.
 
 h3. length
 
-length[5] - Value would have to be exactly 5 chars
-length[1,10] - Value would have to be between 1 and 10 chars
+parameters - single digit for exact or an array for min and max
+{parameters: 5} - Value would have to be exactly 5 chars
+{parameters: [1,10]} - Value would have to be between 1 and 10 chars
 
 h3. numeric 
 
-numeric[decChar] - Value must be a valid positive, negative or decimal number. By default the decimal is a '.'. Change the param if you require a different decimal such as ','.
+parameter - decimal character - '.' by default
+
+Value must be a valid positive, negative or decimal number. By default the decimal is a '.'. Change the param if you require a different decimal such as ','.
 
 h3. phone
 
-phone[7,10,11] - Value must contain the given amount of numbers found in the parameter. By default
-    just using **validate_phone** will return true for 7, 10 and 11 digit phone numbers. If you wanted to
-    accept only 10 digit numbers simply use **validate_phone[10]**. 
+parameters - array of valid lengths
+{parameters: [7]} -  only 7 digit phone numbers allowed
+{parameters: [7,10,11]} - 7, 10 or 11 digit numbers are allowed (default)
+
+Value must contain the given amount of numbers found in the parameter. __Only numbers are considered so 888-888-8888 would be a valid 10 digit phone number.__
 
 h3. required
 
@@ -91,17 +221,14 @@ To add your rule to an element:
 	var provalidate = new ProValidate('myForm').add('state').rule('not[VA]', "You can't live in Virginia, you are not a lover.");
 </code></pre>
 
-h2. Methods
+h2. Handlers
 
-For most methods **element** refers to either the **id** of an element or the **name** of the element. All methods are chainable except validate which returns boolean. 
+ProValidate comes with a default handler that inserts the first error message in a span beneath the failed form element. One of the goals for ProValidate was to allow user created handlers to be easy to make and add when needed. You could even have to different form handlers on the same page for two different forms. 
 
-|_. Method |_. Use |_. Description |
-| add | provalidate.add(element) | Sets an element up for rules to be added with .rule() |
-| addRule | provalidate.addRule(element, rule, message) | Adds a rule to the form element. |
-| addRules | provalidate.addRules(element, {rule: message, rule2: message}) | Adds multiple rules to an element. |
-| clearInvalid | protovalidate.clearInvalid(element) | Clears errors from an element. If no element is given, clears all errors |
-| removeRule | provalidate.removeRule(element, rule) | Removes the given rule from an element. |
-| rule | provalidate.rule(rule, message) | Adds a rule to an element prepared with .add() |
-| storedRules | provaidate.storedRules(element) | Pulls the rules that have been stored in an element with Element#store |
-| trigger | provalidate.trigger(element, rule, message) | Triggers an error. Message is optional. Rule is optional if you provide a message. |
-| validate | provalidate.validate(element, rule) | Returns bool. Rule can be a string to check a single rule, an object of {rules: messages} to check multiple, or nothing to check all rules currently assigned to the element. |
+Tutorial coming soon!
+
+h3. Credits
+
+Big thanks to tfluehr @ http://www.tfluehr.com for providing the getObject function to return Handler instances.
+
+#prototype rules
