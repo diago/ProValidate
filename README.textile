@@ -218,7 +218,12 @@ Object.extend(ProValidate.rules, myRules);
 To add your rule to an element:
 
 <pre><code class="javascript">
-	var provalidate = new ProValidate('myForm').add('state').rule('not[VA]', "You can't live in Virginia, you are not a lover.");
+	$('selectState').rule({
+        not: {
+            parameters: 'VA',
+            message: "You can't live in Virginia, you are not a lover"        
+        }
+    });
 </code></pre>
 
 h2. Handlers
