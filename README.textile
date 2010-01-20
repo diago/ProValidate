@@ -202,7 +202,7 @@ No Parameters - returns false on an empty() value
 
 More built in rules to come.
 
-You can add your own rules by creating a rules object and extending ProValidate.Validation:
+You can add your own rules by creating a rules object and extending ProValidate.rules:
 
 <pre><code class="javascript">
 myRules = {
@@ -212,7 +212,7 @@ myRules = {
 	}
 };
 
-Object.extend(ProValidate.Validation, myRules);
+Object.extend(ProValidate.rules, myRules);
 </code></pre>
 
 To add your rule to an element:
